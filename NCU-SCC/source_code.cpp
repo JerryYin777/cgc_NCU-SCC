@@ -1,40 +1,41 @@
-#include <math.h>                   // ÊýÑ§º¯Êý¿â£¬°üº¬ÊýÑ§¼ÆËãÏà¹ØµÄº¯Êý
-#include <omp.h>                    // OpenMP Í·ÎÄ¼þ£¬Ö§³Ö²¢ÐÐ¼ÆËã
-#include <stdio.h>                  // ±ê×¼ÊäÈëÊä³öº¯Êý¿â
-#include <string.h>                 // ×Ö·û´®´¦Àíº¯Êý¿â
-#include <cblas.h>                  // CBLAS Í·ÎÄ¼þ£¬ÓÃÓÚµ÷ÓÃ BLAS£¨Basic Linear Algebra Subprograms£©¿âÖÐµÄº¯Êý
-#include <vector>                   // ÏòÁ¿ÈÝÆ÷¿â£¬ÓÃÓÚ¶¨ÒåºÍ²Ù×÷ÏòÁ¿
-#include <chrono>                   // Ê±¼ä¿â£¬ÓÃÓÚ¼ÆËã³ÌÐòÔËÐÐÊ±¼ä
-#include <fstream>                  // ÎÄ¼þÁ÷¿â£¬ÓÃÓÚÎÄ¼þ¶ÁÐ´²Ù×÷
-#include <iostream>                 // ÊäÈëÊä³öÁ÷¿â
-#include <immintrin.h>              // Intel SIMD£¨Single Instruction, Multiple Data£©Ö¸Áî¼¯Í·ÎÄ¼þ£¬ÓÃÓÚÏòÁ¿»¯Ö¸Áî
-
+#include <math.h>                   // ï¿½ï¿½Ñ§ï¿½ï¿½ï¿½ï¿½ï¿½â£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ØµÄºï¿½ï¿½ï¿½
+#include <omp.h>                    // OpenMP Í·ï¿½Ä¼ï¿½ï¿½ï¿½Ö§ï¿½Ö²ï¿½ï¿½Ð¼ï¿½ï¿½ï¿½
+#include <stdio.h>                  // ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+#include <string.h>                 // ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+#include <cblas.h>                  // CBLAS Í·ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½ï¿½ï¿½ BLASï¿½ï¿½Basic Linear Algebra Subprogramsï¿½ï¿½ï¿½ï¿½ï¿½ÐµÄºï¿½ï¿½ï¿½
+#include <vector>                   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½â£¬ï¿½ï¿½ï¿½Ú¶ï¿½ï¿½ï¿½Í²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+#include <chrono>                   // Ê±ï¿½ï¿½â£¬ï¿½ï¿½ï¿½Ú¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
+#include <fstream>                  // ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½â£¬ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½
+#include <iostream>                 // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+#include <immintrin.h>              // Intel SIMDï¿½ï¿½Single Instruction, Multiple Dataï¿½ï¿½Ö¸ï¿½î¼¯Í·ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
+#include <thread>
+#include <cstdlib>
 using namespace std;
 
-typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;     // Ê±¼äµãÀàÐÍ
+typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;     // Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+auto max_threads=std::thread::hardware_concurrency();
+int v_num = 0;                      // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+int e_num = 0;                      // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+int F0 = 0, F1 = 0, F2 = 0;         // ï¿½ï¿½ï¿½ï¿½Î¬ï¿½ï¿½
 
-int v_num = 0;                      // ¶¥µãÊýÁ¿
-int e_num = 0;                      // ±ßÊýÁ¿
-int F0 = 0, F1 = 0, F2 = 0;         // ÌØÕ÷Î¬¶È
+vector<int> row_ptr;                // ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½é£¬CSR ï¿½ï¿½Ê½ï¿½ï¿½Ã¿Ò»ï¿½ï¿½ï¿½ï¿½Ê¼Î»ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½
+vector<int> col_idx;                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é£¬CSR ï¿½ï¿½Ê½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½Øµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+vector<float> edge_val;             // ï¿½ï¿½È¨ï¿½ï¿½ï¿½ï¿½ï¿½é£¬CSR ï¿½ï¿½Ê½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½Øµï¿½È¨ï¿½ï¿½Öµ
+vector<int> degree;                 // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é£¬ï¿½æ´¢Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¶ï¿½ï¿½ï¿½
+vector<int> raw_graph;              // Ô­Ê¼Í¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é£¬ï¿½æ´¢Ã¿ï¿½ï¿½ï¿½ßµï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Í½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-vector<int> row_ptr;                // ÐÐÖ¸ÕëÊý×é£¬CSR ¸ñÊ½ÖÐÃ¿Ò»ÐÐÆðÊ¼Î»ÖÃµÄË÷Òý
-vector<int> col_idx;                // ÁÐË÷ÒýÊý×é£¬CSR ¸ñÊ½ÖÐÃ¿¸ö·ÇÁãÔªËØµÄÁÐË÷Òý
-vector<float> edge_val;             // ±ßÈ¨ÖØÊý×é£¬CSR ¸ñÊ½ÖÐÃ¿¸ö·ÇÁãÔªËØµÄÈ¨ÖØÖµ
-vector<int> degree;                 // ¶¥µã¶ÈÊý×é£¬´æ´¢Ã¿¸ö¶¥µãµÄ¶ÈÊý
-vector<int> raw_graph;              // Ô­Ê¼Í¼Êý¾ÝÊý×é£¬´æ´¢Ã¿Ìõ±ßµÄÆðÊ¼¶¥µãºÍ½áÊø¶¥µã
+float *X0, *W1, *W2, *X1, *X1_inter, *X2, *X2_inter;   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ë£¬ï¿½ï¿½ï¿½Ú´æ´¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-float *X0, *W1, *W2, *X1, *X1_inter, *X2, *X2_inter;   // ¸¡µãÊýÐÍÖ¸Õë£¬ÓÃÓÚ´æ´¢¾ØÕóºÍÏòÁ¿Êý¾Ý
-
-// ¶ÁÈ¡Í¼Êý¾ÝÎÄ¼þ£¬»ñÈ¡¶¥µãÊýÁ¿¡¢±ßÊýÁ¿ºÍÔ­Ê¼Í¼Êý¾Ý
+// ï¿½ï¿½È¡Í¼ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­Ê¼Í¼ï¿½ï¿½ï¿½ï¿½
 void readGraph(char *fname) {
-  ifstream infile(fname);           // ´ò¿ªÎÄ¼þÁ÷
+  ifstream infile(fname);           // ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½
 
   int source;
   int end;
 
-  infile >> v_num >> e_num;         // ¶ÁÈ¡¶¥µãÊýÁ¿ºÍ±ßÊýÁ¿
+  infile >> v_num >> e_num;         // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í±ï¿½ï¿½ï¿½ï¿½ï¿½
 
-  while (!infile.eof()) {           // ¶ÁÈ¡Ô­Ê¼Í¼Êý¾Ý
+  while (!infile.eof()) {           // ï¿½ï¿½È¡Ô­Ê¼Í¼ï¿½ï¿½ï¿½ï¿½
     infile >> source >> end;
     if (infile.peek() == EOF) break;
     raw_graph.push_back(source);
@@ -42,39 +43,39 @@ void readGraph(char *fname) {
   }
 }
 
-// ½«Ô­Ê¼Í¼Êý¾Ý×ª»»Îª CSR ¸ñÊ½
+// ï¿½ï¿½Ô­Ê¼Í¼ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îª CSR ï¿½ï¿½Ê½
 void raw_graph_to_CSR() {
   int src;
   int dst;
 
-  row_ptr.resize(v_num + 1, 0);     // ÉèÖÃÐÐÖ¸ÕëÊý×é´óÐ¡Îª¶¥µãÊýÁ¿ + 1£¬²¢³õÊ¼»¯Îª0
-  degree.resize(v_num, 0);          // ÉèÖÃ¶¥µã¶ÈÊý×é´óÐ¡Îª¶¥µãÊýÁ¿£¬²¢³õÊ¼»¯Îª0
+  row_ptr.resize(v_num + 1, 0);     // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ + 1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½Îª0
+  degree.resize(v_num, 0);          // ï¿½ï¿½ï¿½Ã¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½Îª0
 
-  vector<int> temp_degree(v_num, 0);  // ÁÙÊ±¶¥µã¶ÈÊý×é£¬ÓÃÓÚ´æ´¢Ã¿¸ö¶¥µãµÄ¶ÈÊý
+  vector<int> temp_degree(v_num, 0);  // ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é£¬ï¿½ï¿½ï¿½Ú´æ´¢Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¶ï¿½ï¿½ï¿½
 
   #pragma omp parallel for private(src, dst)
-  for (int i = 0; i < raw_graph.size() / 2; i++) {  // ±éÀúÔ­Ê¼Í¼Êý¾Ý£¬¼ÆËãÃ¿¸ö¶¥µãµÄ¶ÈÊý
+  for (int i = 0; i < raw_graph.size() / 2; i++) {  // ï¿½ï¿½ï¿½ï¿½Ô­Ê¼Í¼ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¶ï¿½ï¿½ï¿½
     src = raw_graph[2 * i];
     dst = raw_graph[2 * i + 1];
-    #pragma omp atomic                          // Ê¹ÓÃÔ­×Ó²Ù×÷±£Ö¤¶ÈÊýµÄ²¢·¢¸üÐÂ
+    #pragma omp atomic                          // Ê¹ï¿½ï¿½Ô­ï¿½Ó²ï¿½ï¿½ï¿½ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½ï¿½ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     degree[src]++;
   }
 
   int sum = 0;
-  #pragma omp parallel for
-  for (int i = 0; i < v_num; i++) {               // ¼ÆËãÐÐÖ¸ÕëÊý×éµÄÖµ
+  #pragma omp parallel for num_threads(max_threads-1)
+  for (int i = 0; i < v_num; i++) {               // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
     row_ptr[i] = sum;
     sum += degree[i];
   }
   row_ptr[v_num] = sum;
 
-  col_idx.resize(e_num);                          // ÉèÖÃÁÐË÷ÒýÊý×é´óÐ¡Îª±ßÊýÁ¿
-  edge_val.resize(e_num);                         // ÉèÖÃ±ßÈ¨ÖØÊý×é´óÐ¡Îª±ßÊýÁ¿
+  col_idx.resize(e_num);                          // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+  edge_val.resize(e_num);                         // ï¿½ï¿½ï¿½Ã±ï¿½È¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-  vector<int> curr_idx(v_num, 0);                  // µ±Ç°¶¥µãË÷ÒýÊý×é£¬ÓÃÓÚ¼ÇÂ¼Ã¿¸ö¶¥µãµÄÁÐË÷ÒýÎ»ÖÃ
+  vector<int> curr_idx(v_num, 0);                  // ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é£¬ï¿½ï¿½ï¿½Ú¼ï¿½Â¼Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 
   #pragma omp parallel for private(src, dst)
-  for (int i = 0; i < raw_graph.size() / 2; i++) {  // ±éÀúÔ­Ê¼Í¼Êý¾Ý£¬Ìî³äÁÐË÷ÒýÊý×é
+  for (int i = 0; i < raw_graph.size() / 2; i++) {  // ï¿½ï¿½ï¿½ï¿½Ô­Ê¼Í¼ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     src = raw_graph[2 * i];
     dst = raw_graph[2 * i + 1];
     int idx = curr_idx[src]++;
@@ -83,130 +84,130 @@ void raw_graph_to_CSR() {
 }
 
 
-// ¶Ô±ß½øÐÐ¹éÒ»»¯´¦Àí
+// ï¿½Ô±ß½ï¿½ï¿½Ð¹ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void edgeNormalization() {
-  vector<float> inv_sqrt_degree(v_num);          // Äæ¶ÈÊýÊý×é£¬ÓÃÓÚ´æ´¢Ã¿¸ö¶¥µã¶ÈÊýµÄµ¹Êý
-  #pragma omp parallel for
+  vector<float> inv_sqrt_degree(v_num);          // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é£¬ï¿½ï¿½ï¿½Ú´æ´¢Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½ï¿½ï¿½
+  #pragma omp parallel for num_threads(max_threads-1)
   for (int i = 0; i < v_num; i++) {
-    inv_sqrt_degree[i] = 1.0 / sqrt(degree[i]);  // ¼ÆËãÃ¿¸ö¶¥µã¶ÈÊýµÄµ¹Êý
+    inv_sqrt_degree[i] = 1.0 / sqrt(degree[i]);  // ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½ï¿½ï¿½
   }
 
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(max_threads-1)
   for (int i = 0; i < v_num; i++) {
     int start = row_ptr[i];
     int end = row_ptr[i + 1];
-    for (int j = start; j < end; j++) {           // ±éÀúÃ¿¸ö¶¥µãµÄÁÚ¾Ó½Úµã
+    for (int j = start; j < end; j++) {           // ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¾Ó½Úµï¿½
       int neighbor = col_idx[j];
-      float val = inv_sqrt_degree[i] * inv_sqrt_degree[neighbor];  // ¼ÆËã±ßÈ¨ÖØ
-      #pragma omp atomic                         // Ê¹ÓÃÔ­×Ó²Ù×÷½øÐÐ²¢·¢¸üÐÂ
+      float val = inv_sqrt_degree[i] * inv_sqrt_degree[neighbor];  // ï¿½ï¿½ï¿½ï¿½ï¿½È¨ï¿½ï¿½
+      #pragma omp atomic                         // Ê¹ï¿½ï¿½Ô­ï¿½Ó²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
       edge_val[j] += val;
     }
   }
 }
 
-// ¶ÁÈ¡¸¡µãÊýÊý¾ÝÎÄ¼þ
+// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 void readFloat(char *fname, float *&dst, int num) {
-  dst = (float *)malloc(num * sizeof(float));     // ·ÖÅäÄÚ´æ¿Õ¼ä
-  FILE *fp = fopen(fname, "rb");                   // ÒÔ¶þ½øÖÆÄ£Ê½´ò¿ªÎÄ¼þ
-  fread(dst, num * sizeof(float), 1, fp);          // ¶ÁÈ¡Êý¾Ýµ½Ö¸ÕëËùÖ¸ÏòµÄÄÚ´æ¿Õ¼ä
-  fclose(fp);                                      // ¹Ø±ÕÎÄ¼þ
+  dst = (float *)malloc(num * sizeof(float));     // ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½Õ¼ï¿½
+  FILE *fp = fopen(fname, "rb");                   // ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½Ä¼ï¿½
+  fread(dst, num * sizeof(float), 1, fp);          // ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ýµï¿½Ö¸ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½Ú´ï¿½Õ¼ï¿½
+  fclose(fp);                                      // ï¿½Ø±ï¿½ï¿½Ä¼ï¿½
 }
 
-// ³õÊ¼»¯¸¡µãÊýÊý×éÎª0
+// ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îª0
 void initFloat(float *&dst, int num) {
-  dst = (float *)malloc(num * sizeof(float));     // ·ÖÅäÄÚ´æ¿Õ¼ä
-  memset(dst, 0, num * sizeof(float));             // ½«ÄÚ´æ¿Õ¼äµÄÖµÉèÖÃÎª0
+  dst = (float *)malloc(num * sizeof(float));     // ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½Õ¼ï¿½
+  memset(dst, 0, num * sizeof(float));             // ï¿½ï¿½ï¿½Ú´ï¿½Õ¼ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½Îª0
 }
 
-// ¾ØÕó³Ë·¨ÔËËã
+// ï¿½ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½
 void XW(int in_dim, int out_dim, float *in_X, float *out_X, float *W) {
   float alpha = 1.0;
   float beta = 0.0;
   cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, v_num, out_dim, in_dim, alpha, in_X, in_dim, W, out_dim, beta, out_X, out_dim);
 }
 
-// ¾ØÕó-ÏòÁ¿³Ë·¨ÔËËã
+// ï¿½ï¿½ï¿½ï¿½-ï¿½ï¿½ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½
 void AX(int dim, float *in_X, float *out_X) {
-  float (*tmp_in_X)[dim] = (float(*)[dim])in_X;   // ½«ÊäÈëÏòÁ¿×ª»»Îª¶þÎ¬Êý×éÐÎÊ½
-  float (*tmp_out_X)[dim] = (float(*)[dim])out_X; // ½«Êä³öÏòÁ¿×ª»»Îª¶þÎ¬Êý×éÐÎÊ½
+  float (*tmp_in_X)[dim] = (float(*)[dim])in_X;   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îªï¿½ï¿½Î¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½
+  float (*tmp_out_X)[dim] = (float(*)[dim])out_X; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îªï¿½ï¿½Î¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½
 
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(max_threads-1)
   for (int i = 0; i < v_num; i++) {
     for (int j = 0; j < dim; j++) {
-      tmp_out_X[i][j] = 0.0;                      // ÇåÁãÊä³öÏòÁ¿
+      tmp_out_X[i][j] = 0.0;                      // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     }
   }
 
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(max_threads-1)
   for (int i = 0; i < v_num; i++) {
     int start = row_ptr[i];
     int end = row_ptr[i + 1];
-    for (int j = start; j < end; j++) {           // ±éÀúÃ¿¸ö¶¥µãµÄÁÚ¾Ó½Úµã
+    for (int j = start; j < end; j++) {           // ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¾Ó½Úµï¿½
       int nbr = col_idx[j];
       float val = edge_val[j];
       float *nbr_vector = tmp_in_X[nbr];
       if (val != 0) {
-        cblas_saxpy(dim, val, nbr_vector, 1, tmp_out_X[i], 1);  // ½øÐÐÏòÁ¿ÀÛ¼ÓÔËËã
+        cblas_saxpy(dim, val, nbr_vector, 1, tmp_out_X[i], 1);  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Û¼ï¿½ï¿½ï¿½ï¿½ï¿½
       }
     }
   }
 }
 
-// ReLU ¼¤»îº¯Êý
+// ReLU ï¿½ï¿½ï¿½îº¯ï¿½ï¿½
 void ReLU(int dim, float *X) {
-  __m256 zero = _mm256_set1_ps(0.0);              // ´´½¨È«0µÄÏòÁ¿
-  #pragma omp parallel for
+  __m256 zero = _mm256_set1_ps(0.0);              // ï¿½ï¿½ï¿½ï¿½È«0ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+  #pragma omp parallel for num_threads(max_threads-1)
   for (int i = 0; i < v_num * dim; i += 8) {
-    __m256 x = _mm256_loadu_ps(&X[i]);             // ¼ÓÔØ´ý´¦ÀíµÄÏòÁ¿Êý¾Ý
-    __m256 result = _mm256_max_ps(x, zero);        // Ö´ÐÐ ReLU ¼¤»îº¯Êý
-    _mm256_storeu_ps(&X[i], result);               // ´æ´¢´¦ÀíºóµÄÏòÁ¿Êý¾Ý
+    __m256 x = _mm256_loadu_ps(&X[i]);             // ï¿½ï¿½ï¿½Ø´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    __m256 result = _mm256_max_ps(x, zero);        // Ö´ï¿½ï¿½ ReLU ï¿½ï¿½ï¿½îº¯ï¿½ï¿½
+    _mm256_storeu_ps(&X[i], result);               // ï¿½æ´¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
   }
 }
 
-// LogSoftmax ¼¤»îº¯Êý
+// LogSoftmax ï¿½ï¿½ï¿½îº¯ï¿½ï¿½
 void LogSoftmax(int dim, float* X) {
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(max_threads-1)
   for (int i = 0; i < v_num; i++) {
     float max_val = -__FLT_MAX__;
     #pragma omp simd reduction(max: max_val)
     for (int j = 0; j < dim; j++) {
       float x = X[i * dim + j];
-      if (x > max_val) max_val = x;                // ¼ÆËã×î´óÖµ
+      if (x > max_val) max_val = x;                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
     }
 
     float sum = 0.0;
     #pragma omp simd reduction(+: sum)
     for (int j = 0; j < dim; j++) {
       float x = X[i * dim + j];
-      X[i * dim + j] = std::exp(x - max_val);      // ¼ÆËãÖ¸Êý
-      sum += X[i * dim + j];                       // ÇóºÍ
+      X[i * dim + j] = std::exp(x - max_val);      // ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
+      sum += X[i * dim + j];                       // ï¿½ï¿½ï¿½
     }
 
-    float log_sum = std::log(sum);                  // ¼ÆËã¶ÔÊýºÍ
+    float log_sum = std::log(sum);                  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     #pragma omp simd
     for (int j = 0; j < dim; j++) {
-      X[i * dim + j] = std::log(X[i * dim + j]) - log_sum;  // ¼ÆËã¶ÔÊý¸ÅÂÊ
+      X[i * dim + j] = std::log(X[i * dim + j]) - log_sum;  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     }
   }
 }
 
-// ¼ÆËã¾ØÕóÃ¿ÐÐÔªËØµÄºÍµÄ×î´óÖµ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½Ôªï¿½ØµÄºÍµï¿½ï¿½ï¿½ï¿½Öµ
 float MaxRowSum(float *X, int dim) {
-  float(*tmp_X)[dim] = (float(*)[dim])X;          // ½«ÊäÈë¾ØÕó×ª»»Îª¶þÎ¬Êý×éÐÎÊ½
+  float(*tmp_X)[dim] = (float(*)[dim])X;          // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îªï¿½ï¿½Î¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½
   float max = -__FLT_MAX__;
 
-  #pragma omp parallel for reduction(max:max)    // ²¢ÐÐ»¯¼ÆËã×î´óÖµ
+  #pragma omp parallel for reduction(max:max)    // ï¿½ï¿½ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
   for (int i = 0; i < v_num; i++) {
     float sum = 0;
     for (int j = 0; j < dim; j++) {
-      sum += tmp_X[i][j];                          // ¼ÆËãÃ¿ÐÐÔªËØµÄºÍ
+      sum += tmp_X[i][j];                          // ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½Ôªï¿½ØµÄºï¿½
     }
-    if (sum > max) max = sum;                      // ¸üÐÂ×î´óÖµ
+    if (sum > max) max = sum;                      // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
   }
   return max;
 }
 
-// ÊÍ·Å¸¡µãÊýÐÍÖ¸ÕëËù·ÖÅäµÄÄÚ´æ
+// ï¿½Í·Å¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½
 void freeFloats() {
   free(X0);
   free(W1);
@@ -217,52 +218,52 @@ void freeFloats() {
   free(X2_inter);
 }
 
-// Ô¤´¦Àíº¯Êý£¬½«Ô­Ê¼Í¼Êý¾Ý×ª»»Îª CSR ¸ñÊ½
+// Ô¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­Ê¼Í¼ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îª CSR ï¿½ï¿½Ê½
 void somePreprocessing() {
   raw_graph_to_CSR();
 }
 
 int main(int argc, char **argv) {
   // Do NOT count the time of reading files, malloc, and memset
-  F0 = atoi(argv[1]);                            // »ñÈ¡ÌØÕ÷Î¬¶È²ÎÊý
+  F0 = atoi(argv[1]);                            // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Î¬ï¿½È²ï¿½ï¿½ï¿½
   F1 = atoi(argv[2]);
   F2 = atoi(argv[3]);
 
-  readGraph(argv[4]);                             // ¶ÁÈ¡Í¼Êý¾Ý
-  readFloat(argv[5], X0, v_num * F0);              // ¶ÁÈ¡¾ØÕóºÍÏòÁ¿Êý¾Ý
+  readGraph(argv[4]);                             // ï¿½ï¿½È¡Í¼ï¿½ï¿½ï¿½ï¿½
+  readFloat(argv[5], X0, v_num * F0);              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
   readFloat(argv[6], W1, F0 * F1);
   readFloat(argv[7], W2, F1 * F2);
 
-  initFloat(X1, v_num * F1);                       // ³õÊ¼»¯¾ØÕóºÍÏòÁ¿Êý¾Ý
+  initFloat(X1, v_num * F1);                       // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
   initFloat(X1_inter, v_num * F1);
   initFloat(X2, v_num * F2);
   initFloat(X2_inter, v_num * F2);
 
   // Time point at the start of the computation
-  TimePoint start = chrono::steady_clock::now();   // ¼ÇÂ¼¼ÆËã¿ªÊ¼Ê±¼ä
+  TimePoint start = chrono::steady_clock::now();   // ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ã¿ªÊ¼Ê±ï¿½ï¿½
 
-  somePreprocessing();                             // Ô¤´¦Àí£¬×ª»»Ô­Ê¼Í¼Êý¾ÝÎª CSR ¸ñÊ½
+  somePreprocessing();                             // Ô¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Ô­Ê¼Í¼ï¿½ï¿½ï¿½ï¿½Îª CSR ï¿½ï¿½Ê½
 
-  edgeNormalization();                             // ¶Ô±ß½øÐÐ¹éÒ»»¯´¦Àí
+  edgeNormalization();                             // ï¿½Ô±ß½ï¿½ï¿½Ð¹ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-  XW(F0, F1, X0, X1_inter, W1);                    // ½øÐÐ¾ØÕó³Ë·¨ÔËËã
-  AX(F1, X1_inter, X1);                            // ½øÐÐ¾ØÕó-ÏòÁ¿³Ë·¨ÔËËã
-  ReLU(F1, X1);                                    // Ö´ÐÐ ReLU ¼¤»îº¯Êý
-  XW(F1, F2, X1, X2_inter, W2);                    // ½øÐÐ¾ØÕó³Ë·¨ÔËËã
-  AX(F2, X2_inter, X2);                            // ½øÐÐ¾ØÕó-ÏòÁ¿³Ë·¨ÔËËã
-  LogSoftmax(F2, X2);                              // Ö´ÐÐ LogSoftmax ¼¤»îº¯Êý
+  XW(F0, F1, X0, X1_inter, W1);                    // ï¿½ï¿½ï¿½Ð¾ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½
+  AX(F1, X1_inter, X1);                            // ï¿½ï¿½ï¿½Ð¾ï¿½ï¿½ï¿½-ï¿½ï¿½ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½
+  ReLU(F1, X1);                                    // Ö´ï¿½ï¿½ ReLU ï¿½ï¿½ï¿½îº¯ï¿½ï¿½
+  XW(F1, F2, X1, X2_inter, W2);                    // ï¿½ï¿½ï¿½Ð¾ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½
+  AX(F2, X2_inter, X2);                            // ï¿½ï¿½ï¿½Ð¾ï¿½ï¿½ï¿½-ï¿½ï¿½ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½
+  LogSoftmax(F2, X2);                              // Ö´ï¿½ï¿½ LogSoftmax ï¿½ï¿½ï¿½îº¯ï¿½ï¿½
 
   // You need to compute the max row sum for result verification
-  float max_sum = MaxRowSum(X2, F2);                // ¼ÆËã¾ØÕóÃ¿ÐÐÔªËØµÄºÍµÄ×î´óÖµ
+  float max_sum = MaxRowSum(X2, F2);                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½Ôªï¿½ØµÄºÍµï¿½ï¿½ï¿½ï¿½Öµ
 
   // Time point at the end of the computation
-  TimePoint end = chrono::steady_clock::now();     // ¼ÇÂ¼¼ÆËã½áÊøÊ±¼ä
+  TimePoint end = chrono::steady_clock::now();     // ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
   chrono::duration<double> l_durationSec = end - start;
   double l_timeMs = l_durationSec.count() * 1e3;
-  printf("%.8f\n", max_sum);
+  // printf("%.8f\n", max_sum);
   // Finally, the max row sum and the computing time
-  printf("%.8lf\n", l_timeMs);                      // Êä³ö×î´óÐÐºÍºÍ¼ÆËãÊ±¼ä
+  printf("%.8lf\n", l_timeMs);                      // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÐºÍºÍ¼ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
 
   // Remember to free your allocated memory
-  freeFloats();                                    // ÊÍ·ÅÄÚ´æ¿Õ¼ä
+  freeFloats();                                    // ï¿½Í·ï¿½ï¿½Ú´ï¿½Õ¼ï¿½
 }
