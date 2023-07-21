@@ -1,1 +1,0 @@
-# cgc_NCU-SCC
